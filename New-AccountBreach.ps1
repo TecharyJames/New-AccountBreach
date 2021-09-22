@@ -244,8 +244,7 @@ function revoke-365Access {
 
 function get-ADLogs {
 
-
-    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "C:\users\$env:username\LoggedInLocations.csv" # export doesnt work
-
+    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "C:\users\$env:username\LoggedInLocations.csv"
 
 }
+
