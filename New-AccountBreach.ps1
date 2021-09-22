@@ -2,6 +2,23 @@
 ### James Tarran // Techary ###
 ###############################
 
+function print-TecharyLogo {
+    
+    $logo = "
+      _______        _                      
+     |__   __|      | |                     
+        | | ___  ___| |__   __ _ _ __ _   _ 
+        | |/ _ \/ __| '_ \ / _`` | '__| | | |
+        | |  __/ (__| | | | (_| | |  | |_| |
+        |_|\___|\___|_| |_|\__,_|_|   \__, |
+                                       __/ |
+                                      |___/ 
+"
+
+    write-host -ForegroundColor Green $logo
+
+}
+
 function Get-NewPassword {
 
     [CmdletBinding()]
