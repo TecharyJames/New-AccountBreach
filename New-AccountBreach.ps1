@@ -1,24 +1,6 @@
 ###############################
 ### James Tarran // Techary ###
 ###############################
-
-function print-TecharyLogo {
-    
-    $logo = "
-      _______        _                      
-     |__   __|      | |                     
-        | | ___  ___| |__   __ _ _ __ _   _ 
-        | |/ _ \/ __| '_ \ / _`` | '__| | | |
-        | |  __/ (__| | | | (_| | |  | |_| |
-        |_|\___|\___|_| |_|\__,_|_|   \__, |
-                                       __/ |
-                                      |___/ 
-"
-
-    write-host -ForegroundColor Green $logo
-
-}
-
 function Get-NewPassword {
 
     [CmdletBinding()]
@@ -87,6 +69,24 @@ function Get-NewPassword {
         Write-Verbose -Message "Finishing function"
     }
 }
+
+function print-TecharyLogo {
+    
+    $logo = "
+      _______        _                      
+     |__   __|      | |                     
+        | | ___  ___| |__   __ _ _ __ _   _ 
+        | |/ _ \/ __| '_ \ / _`` | '__| | | |
+        | |  __/ (__| | | | (_| | |  | |_| |
+        |_|\___|\___|_| |_|\__,_|_|   \__, |
+                                       __/ |
+                                      |___/ 
+"
+
+    write-host -ForegroundColor Green $logo
+
+}
+
 
 function connect-365 {
 
@@ -172,6 +172,43 @@ function connect-365 {
 
 }
 
+function get-ADConnectStatus {
+
+    $MSOL = (Get-MsolDirSyncFeatures).enabled
+
+    if ($msol -contains "True") 
+        {
+            
+            $DomainRole = Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty DomainRole
+
+            if ($DomainRole -match '4|5')
+                {
+                    
+                    start-LocalAccountBreach
+
+                }
+            
+            else 
+                {
+            
+                    write-host -ForegroundColor Red "This 365 tenant has ADConnect. Please run this script on a domain controller."
+
+                    start-sleep 5
+                
+                }
+
+        
+        } 
+    
+    else
+        {
+
+            start-CloudAccountBreach
+
+        }
+
+}
+
 function get-upn {
 
     $script:upn = Read-Host "Enter the UPN of the breached account"
@@ -191,49 +228,24 @@ function get-upn {
 
 }
 
-function get-ADConnectStatus {
-
-    $MSOL = (Get-MsolDirSyncFeatures).enabled
-
-    if ($msol -contains "True") 
-        {
-            
-            $DomainRole = Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty DomainRole
-
-            if ($DomainRole -match '4|5')
-                {
-                    
-
-
-                }
-            
-            else 
-            {
-            
-                write-host -ForegroundColor Red "This 365 tenant has ADConnect. Please run this script on a domain controller."
-
-                start-sleep 5
-                
-            }
-
-        
-        } 
-    
-    else
-        {
-
-        }
-
-}
-
 function Set-NewCloudPassword {
 
-    $Script:NewCloudPassword = Get-NewLocalPassword -PasswordLength 12 -NumberOfPasswords 1
+    $Script:NewCloudPassword = Get-NewPassword -PasswordLength 12 -NumberOfPasswords 1
 
     $SecureCloudPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
 
-    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $script:SecurePassword
+    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $SecureCloudPassword
   
+}
+
+function set-NewLocalPassword {
+
+    $Script:NewLocalPassword = Get-NewPassword -PasswordLength 12 -NumberOfPasswords 1
+
+    $SecureLocalPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
+
+    get-aduser -filter "userPrincipalName -eq '$script:upn'" | Set-ADAccountPassword -newpassword $SecureLocalPassword
+
 }
 
 function revoke-365Access {
@@ -242,9 +254,84 @@ function revoke-365Access {
 
 }
 
-function get-ADLogs {
+function remove-RestrictedUser {
 
-    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "C:\users\$env:username\LoggedInLocations.csv"
+    Remove-BlockedSenderAddress -SenderAddress $script:upn
 
 }
 
+function get-ADLogs {
+
+    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "$env:userprofile\LoggedInLocations.csv"
+
+}
+
+function disable-maliciousRules {
+
+    $RuleID = (get-inboxrule -mailbox $script:upn).RuleIdentity
+
+    foreach ($rule in $RuleID)
+        {
+            disable-inboxrule -mailbox $script:upn -identity $rule
+        }
+
+    $RuleNames = get-inboxrule -mailbox $script:upn | select name
+
+    Write-Host "The following mailbox rules have been disabled:"
+
+    $RuleNames
+
+}
+
+function start-CloudAccountBreach {
+
+    Start-Transcript -path "$env:userprofile\AccountBreach.txt"
+
+    print-TecharyLogo
+
+    get-upn
+
+    Set-NewCloudPassword
+
+    revoke-365Access
+
+    remove-RestrictedUser
+
+    get-ADLogs
+
+    disable-maliciousRules
+
+    write-host "The password has been reset to $script:NewCloudPassword"
+
+    write-host "`nThe login locations for $script:upn have been saved to $env:userprofile\LoggedInLocations.csv. 
+                `nA transcript of this script has been saved to $env:username\AccountBreach.txt. 
+                `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
+                `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+}
+
+function start-LocalAccountBreach {
+
+    Start-Transcript -path "$env:userprofile\AccountBreach.txt"
+
+    print-TecharyLogo
+
+    get-upn
+
+    set-NewLocalPassword
+
+    revoke-365Access
+
+    remove-RestrictedUser
+
+    get-ADLogs
+
+    disable-maliciousRules
+
+    write-host "The password has been reset to $script:newlocalpassword, please perform a directory sync in ADConnect.
+                `nThe login locations for $script:upn have been saved to $env:userprofile\LoggedInLocations.csv.
+                `nA transcript of this script has been saved to $env:userProfile\AccountBreach.txt.
+                `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
+                `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+}
