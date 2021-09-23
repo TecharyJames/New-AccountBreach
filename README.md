@@ -18,4 +18,5 @@ This script will:
     2. Right click > Run with powershell
     3. Profit!
 
-If you have any suggestions or feedback, or even any issues with this script please feel free to email me on jtarran@techary.com!
+# Feedback
+    If you have any suggestions or feedback, or even any issues with this script please feel free to email me on jtarran@techary.com!
