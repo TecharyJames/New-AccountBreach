@@ -120,7 +120,7 @@ function connect-365 {
 
         import-module ExchangeOnlineManagement
         
-        import-module AzureAD
+        import-module AzureADPreview
 
         Connect-MsolService
 
