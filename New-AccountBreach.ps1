@@ -1,6 +1,28 @@
 ###############################
 ### James Tarran // Techary ###
 ###############################
+
+# Elevates to admin
+param([switch]$Elevated)
+
+function Test-Admin {
+$currentUser = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
+$currentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+}
+
+if ((Test-Admin) -eq $false)  {
+    if ($elevated)
+    {
+        # tried to elevate, did not work, aborting
+    }
+    else {
+        Start-Process powershell.exe -Verb RunAs -ArgumentList ('-noprofile -noexit -file "{0}" -elevated' -f ($myinvocation.MyCommand.Definition))
+}
+
+exit
+
+
+
 function Get-NewPassword {
 
     [CmdletBinding()]
@@ -304,7 +326,7 @@ function start-CloudAccountBreach {
     write-host "The password has been reset to $script:NewCloudPassword"
 
     write-host "`nThe login locations for $script:upn have been saved to $env:userprofile\LoggedInLocations.csv. 
-                `nA transcript of this script has been saved to $env:username\AccountBreach.txt. 
+                `nA transcript of this script has been saved to $env:userprofile\AccountBreach.txt. 
                 `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                 `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
@@ -335,3 +357,7 @@ function start-LocalAccountBreach {
                 `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
 }
+
+connect-365
+
+get-ADConnectStatus
