@@ -330,6 +330,8 @@ function start-CloudAccountBreach {
                 `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                 `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
+    Stop-Transaction
+
 }
 
 function start-LocalAccountBreach {
@@ -355,6 +357,8 @@ function start-LocalAccountBreach {
                 `nA transcript of this script has been saved to $env:userProfile\AccountBreach.txt.
                 `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
                 `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+    Stop-Transcript
 
 }
 
