@@ -114,13 +114,13 @@ function connect-365 {
 
     function invoke-mfaConnection {
 
-        Connect-ExchangeOnline
-
         import-module MSOnline
 
         import-module ExchangeOnlineManagement
         
         import-module AzureADPreview
+
+        Connect-ExchangeOnline
 
         connect-azuread
 
