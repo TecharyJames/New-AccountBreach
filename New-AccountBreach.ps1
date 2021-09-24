@@ -122,6 +122,8 @@ function connect-365 {
         
         import-module AzureADPreview
 
+        connect-azuread
+
         Connect-MsolService
 
         }
