@@ -4,8 +4,8 @@ This script will:
 
     1. Check if your 365 tenant has any directory sync settings enabled. 
     2. If so, direct you to run the script on a DC, if it is not already.
-    3. Connects to 365.
-    4. Requests the UPN of the breached user.
+    3. Connect to 365.
+    4. Request the UPN of the breached user.
     5. Reset the password of the breached user.
     6. Revoke all Azure AD refresh tokens.
     7. Remove the account from the 'Restricted users' in 365.
