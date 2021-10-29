@@ -19,6 +19,8 @@ if ((Test-Admin) -eq $false)  {
         Start-Process powershell.exe -Verb RunAs -ArgumentList ('-noprofile -noexit -file "{0}" -elevated' -f ($myinvocation.MyCommand.Definition))
 }
 
+}
+
 exit
 
 
@@ -180,10 +182,10 @@ function connect-365 {
     if (Get-Module -ListAvailable -Name AzureAD) 
     {
         write-host "AzureAD exists, removing...."
-        remove-module -name AzureAD | Out-Null
-        uninstall-module -name AzureAD | Out-Null
-        Remove-Item -path "C:\Program Files\WindowsPowerShell\modules\AzureAD" -recurse -force | Out-Null
-        Remove-Item -path "C:\Program Files (x86)\WindowsPowerShell\modules\AzureAD" -recurse -force | Out-Null
+        remove-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
+        uninstall-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
+        Remove-Item -path "C:\Program Files\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
+        Remove-Item -path "C:\Program Files (x86)\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
     } 
     else 
     {
