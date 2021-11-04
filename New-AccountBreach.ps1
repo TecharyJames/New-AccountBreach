@@ -334,7 +334,7 @@ function start-CloudAccountBreach {
                 `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                 `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
-    Stop-Transaction
+    Stop-Transcript
 
 }
 
