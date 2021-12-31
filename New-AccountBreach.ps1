@@ -23,10 +23,6 @@ exit
 
 }
 
-
-
-
-
 function Get-NewPassword {
 
     [CmdletBinding()]
@@ -290,7 +286,7 @@ function remove-RestrictedUser {
 
 function get-ADLogs {
 
-    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "$env:userprofile\LoggedInLocations.csv"
+    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "$Script:DesktopPath\LoggedInLocations.csv"
 
 }
 
@@ -313,7 +309,7 @@ function disable-maliciousRules {
 
 function start-CloudAccountBreach {
 
-    Start-Transcript -path "$env:userprofile\AccountBreach.txt"
+    Start-Transcript -path "$Script:DesktopPath\AccountBreach.txt"
 
     print-TecharyLogo
 
@@ -331,8 +327,8 @@ function start-CloudAccountBreach {
 
     write-host "The password has been reset to $script:NewCloudPassword"
 
-    write-host "`nThe login locations for $script:upn have been saved to $env:userprofile\LoggedInLocations.csv. 
-                `nA transcript of this script has been saved to $env:userprofile\AccountBreach.txt. 
+    write-host "`nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv. 
+                `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt. 
                 `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                 `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
@@ -342,7 +338,7 @@ function start-CloudAccountBreach {
 
 function start-LocalAccountBreach {
 
-    Start-Transcript -path "$env:userprofile\AccountBreach.txt"
+    Start-Transcript -path "$Script:DesktopPath\AccountBreach.txt"
 
     print-TecharyLogo
 
@@ -359,14 +355,16 @@ function start-LocalAccountBreach {
     disable-maliciousRules
 
     write-host "The password has been reset to $script:newlocalpassword, please perform a directory sync in ADConnect.
-                `nThe login locations for $script:upn have been saved to $env:userprofile\LoggedInLocations.csv.
-                `nA transcript of this script has been saved to $env:userProfile\AccountBreach.txt.
+                `nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv.
+                `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
                 `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
                 `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
     Stop-Transcript
 
 }
+
+$Script:DesktopPath = [Environment]::GetFolderPath("Desktop")
 
 connect-365
 
