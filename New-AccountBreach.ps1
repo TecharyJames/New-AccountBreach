@@ -2,94 +2,37 @@
 ### James Tarran // Techary ###
 ###############################
 
-# Elevates to admin
-param([switch]$Elevated)
+[CmdletBinding()]
+param 
+    (
 
-function Test-Admin {
-$currentUser = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
-$currentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-}
+        [parameter()][string]$CSV
 
-if ((Test-Admin) -eq $false)  {
-    if ($elevated)
-    {
-        # tried to elevate, did not work, aborting
-    }
-    else {
-        Start-Process powershell.exe -Verb RunAs -ArgumentList ('-noprofile -noexit -file "{0}" -elevated' -f ($myinvocation.MyCommand.Definition))
-}
-
-exit
-
-}
+    )
 
 function Get-NewPassword {
 
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory=$false)][Switch]$SkipUpperCase,
-        [Parameter(Mandatory=$false)][Switch]$SkipLowerCase,
-        [Parameter(Mandatory=$false)][Switch]$SkipNumbers,
-        [Parameter(Mandatory=$false)][Switch]$SkipSymbols,
-        [Parameter(Mandatory=$false)][Int]$PasswordLength = 16,
-        [Parameter(Mandatory=$false)][Int]$NumberOfPasswords = 1,
-        [Parameter(Mandatory=$false)][String]$PasswordsFilePath
-    )
+    $SpecialCharacter = @("!","`$","%","^","&","*","'","@","~","#")
     
-    begin {
-        if($SkipUpperCase.IsPresent -and $SkipLowerCase.IsPresent -and $SkipNumbers.IsPresent -and $SkipSymbols.IsPresent){
-            Write-Error "You may not skip all four types of characters at the same time, try again..."
-            Exit
-        }
+    $ieObject = New-Object -ComObject 'InternetExplorer.Application'
 
-        $CharArray = New-Object System.Collections.ArrayList
-        $ValidatePass = New-Object System.Collections.ArrayList
+    $ieObject.Navigate('https://www.worksighted.com/random-passphrase-generator/')
 
-        $LowerLetters = New-Object System.Collections.ArrayList; 97..122 | % {$LowerLetters.Add([Char]$_)} | Out-Null
-        $UpperLetters = New-Object System.Collections.ArrayList; 65..90 | % {$UpperLetters.Add([Char]$_)} | Out-Null
-        $Numbers = New-Object System.Collections.ArrayList; 0..9 | % {$Numbers.Add($_.ToString())} | Out-Null
-        $Symbols = New-Object System.Collections.ArrayList; 33..47 | % {$Symbols.Add([Char]$_)} | Out-Null
+    while ($ieobject.ReadyState -ne 4) 
+            {
 
-        if(!$SkipNumbers.IsPresent){$CharArray.Add($Numbers) | Out-Null; $ValidatePass.Add(1) | Out-Null}
-        if(!$SkipLowerCase.IsPresent){$CharArray.Add($LowerLetters) | Out-Null; $ValidatePass.Add(2) | Out-Null}
-        if(!$SkipUpperCase.IsPresent){$CharArray.Add($UpperLetters) | Out-Null; $ValidatePass.Add(3) | Out-Null}
-        if(!$SkipSymbols.IsPresent){$CharArray.Add($Symbols) | Out-Null; $ValidatePass.Add(4) | Out-Null}
-
-        $WorkingSet = $CharArray | % {$_}
-    }
-    
-    process {
-        if($PasswordsFilePath -and !(Test-Path $PasswordsFilePath)){
-            New-Item $PasswordsFilePath -ItemType File
-        }
-
-        for($i = 0; $i -le $NumberOfPasswords; $i++){
-            $Password = New-Object System.Collections.ArrayList
-            for($y = 0; $y -le $PasswordLength; $y++){
-                $Character = $WorkingSet | Get-Random
-                $Password.Add($Character) | Out-Null
+                    start-sleep -Milliseconds 1
+                    
             }
 
-            Switch ($ValidatePass){
-                1 {if(!($Password -match '\d')){$PassNotValid = $true}}
-                2 {if(!($Password -cmatch "[a-z]")){$PassNotValid = $true}}
-                3 {if(!($Password -cmatch "[A-Z]")){$PassNotValid = $true}}
-                4 {
-                    $Password | % {if($Symbols -contains $_){$ContainSymbol = $true}}
-                    if($ContainSymbol -eq $false){$PassNotValid = $true}
-                    $ContainSymbol = $false
-                }
-            }
-            if($PassNotValid -eq $true){$i = $i - 1; $PassNotValid = $false; continue}else {
-                $Password = $Password -join ""
-                if($PasswordsFilePath){Add-Content -Path $PasswordsFilePath -Value $Password}else{Return $Password}
-            }
-        }
-    }
-    
-    end {
-        Write-Verbose -Message "Finishing function"
-    }
+    $currentDocument = $ieObject.Document
+
+    $password = ($currentDocument.IHTMLDocument3_getElementsByTagName("input") | Where-Object {$_.id -eq "txt"}).value
+    $password = $password.Split(' ')[-4..-1]
+    $password = -join($password[0],$password[1],$password[2],$password[3],($SpecialCharacter | Get-Random))
+
+    write-output $password
+
 }
 
 function print-TecharyLogo {
@@ -120,7 +63,7 @@ function connect-365 {
         
         import-module AzureADPreview
 
-        Connect-ExchangeOnline
+        Connect-ExchangeOnline -ShowBanner:$false
 
         connect-azuread
 
@@ -132,7 +75,7 @@ function connect-365 {
 
         Set-PSRepository -Name "PSgallery" -InstallationPolicy Trusted
 
-        Install-Module -Name ExchangeOnlineManagement
+        Install-Module -Name ExchangeOnlineManagement -scope currentuser
 
         }
 
@@ -140,7 +83,7 @@ function connect-365 {
 
         Set-PSRepository -Name "PSgallery" -InstallationPolicy Trusted
 
-        Install-Module MSOnline
+        Install-Module MSOnline -scope currentuser
 
         }
 
@@ -148,49 +91,64 @@ function connect-365 {
 
         Set-PSRepository -Name "PSgallery" -InstallationPolicy Trusted
 
-        install-module AzureADPreview
+        install-module AzureADPreview -scope currentuser
 
     }
 
 
     if (Get-Module -ListAvailable -Name ExchangeOnlineManagement) 
-    {
-        write-host " "
-        write-host "Exchange online Management exists, updating..."
-        update-module -name ExchangeOnlineManagement
-    } 
+        {
+            write-host " "
+            write-host "Exchange online Management exists"
+        } 
     else 
-    {
-        Write-host "Exchange Online Management module does not exist. Please ensure powershell is running as admin. Attempting to download..."
-        Get-ExchangeOnlineManagement
-    }
+        {
+            Write-host "Exchange Online Management module does not exist. Attempting to download..."
+            Get-ExchangeOnlineManagement
+        }
 
 
     if (Get-Module -ListAvailable -Name MSOnline) 
-    {
-        write-host "MSOnline exists, updating..."
-        update-module -name MSOnline
-    } 
+        {
+            write-host "MSOnline exists"
+        } 
     else 
-    {
-        Write-host "MSOnline module does not exist. Please ensure powershell is running as admin. Attempting to download..."
-        Get-MSOnline
-    }
+        {
+            Write-host "MSOnline module does not exist. Attempting to download..."
+            Get-MSOnline
+        }
 
     if (Get-Module -ListAvailable -Name AzureAD) 
-    {
-        write-host "AzureAD exists, removing...."
-        remove-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
-        uninstall-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
-        Remove-Item -path "C:\Program Files\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
-        Remove-Item -path "C:\Program Files (x86)\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
-    } 
-    else 
-    {
-    
-        Get-AzureAD
+        {
+            write-host "AzureAD exists, removing...."
+            remove-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
+            uninstall-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -path "C:\Program Files\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -path "C:\Program Files (x86)\WindowsPowerShell\modules\AzureAD" -recurse -force -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -path (([Environment]::GetFolderPath("MyDocuments"))+"\WindowsPowerShell\modules\AzureAD") -recurse -force -ErrorAction SilentlyContinue | Out-Null
 
-    }
+            if (Get-Module -ListAvailable -Name AzureADpreview)
+                {
+
+                    write-host "AzureADpreview exists"
+
+                }
+            else 
+                {
+
+                    Write-host "AzureADPreview module does not exist. Attempting to download..."
+                    Get-AzureAD
+                
+                }
+
+        }
+    else
+        {
+
+            Write-host "AzureADPreview module does not exist. Attempting to download..."
+            Get-AzureAD
+
+        } 
 
     invoke-mfaConnection
 
@@ -217,7 +175,7 @@ function get-ADConnectStatus {
             
                     write-host -ForegroundColor Red "This 365 tenant has ADConnect. Please run this script on a domain controller."
 
-                    start-sleep 5
+                    pause
                 
                 }
 
@@ -238,23 +196,25 @@ function get-upn {
     $script:upn = Read-Host "Enter the UPN of the breached account"
 
     if (Get-MsolUser -UserPrincipalName $script:upn -ErrorAction SilentlyContinue) 
-    {
-        Write-host "User found..."
-        $global:upn
-    }
+        {
+
+            Write-host "User found..."
+
+        }
 
     else 
-    {
-        write-host "User not found, try again" 
-        get-upn
-        
-    }
+        {
+            
+            write-host "User not found, try again" 
+            get-upn
+            
+        }
 
 }
 
 function Set-NewCloudPassword {
 
-    $Script:NewCloudPassword = Get-NewPassword -PasswordLength 12 -NumberOfPasswords 1
+    $Script:NewCloudPassword = Get-NewPassword
 
     $SecureCloudPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
 
@@ -264,7 +224,7 @@ function Set-NewCloudPassword {
 
 function set-NewLocalPassword {
 
-    $Script:NewLocalPassword = Get-NewPassword -PasswordLength 12 -NumberOfPasswords 1
+    $Script:NewLocalPassword = Get-NewPassword
 
     $SecureLocalPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
 
@@ -313,24 +273,39 @@ function start-CloudAccountBreach {
 
     print-TecharyLogo
 
-    get-upn
+    if($script:UPNs)
+        {
 
-    Set-NewCloudPassword
 
-    revoke-365Access
+        }
+    else 
+        {
+        
+            get-upn
 
-    remove-RestrictedUser
+        }
+    
+    foreach ($Script:UPN in $script:UPNs)
+        {
+    
+            Set-NewCloudPassword
 
-    get-ADLogs
+            revoke-365Access
 
-    disable-maliciousRules
+            remove-RestrictedUser
 
-    write-host "The password has been reset to $script:NewCloudPassword"
+            get-ADLogs
 
-    write-host "`nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv. 
-                `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt. 
-                `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
-                `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+            disable-maliciousRules
+
+            write-host "The password has been reset to $script:NewCloudPassword"
+
+            write-host "`nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv. 
+                        `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt. 
+                        `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
+                        `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+                
+        }
 
     Stop-Transcript
 
@@ -342,23 +317,37 @@ function start-LocalAccountBreach {
 
     print-TecharyLogo
 
-    get-upn
+    if($script:UPNs)
+        {
 
-    set-NewLocalPassword
 
-    revoke-365Access
+        }
+    else 
+        {
+        
+            get-upn
 
-    remove-RestrictedUser
+        }
 
-    get-ADLogs
+    foreach ($script:upn in $script:UPNs)
+        {
 
-    disable-maliciousRules
+            set-NewLocalPassword
 
-    write-host "The password has been reset to $script:newlocalpassword, please perform a directory sync in ADConnect.
-                `nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv.
-                `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
-                `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
-                `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+            revoke-365Access
+
+            remove-RestrictedUser
+
+            get-ADLogs
+
+            disable-maliciousRules
+
+            write-host "The password has been reset to $script:newlocalpassword, please perform a directory sync in ADConnect.
+                        `nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv.
+                        `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
+                        `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
+                        `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+        }
 
     Stop-Transcript
 
@@ -367,5 +356,13 @@ function start-LocalAccountBreach {
 $Script:DesktopPath = [Environment]::GetFolderPath("Desktop")
 
 connect-365
+
+if ($csv)
+    {
+
+        $script:UPNs = import-csv $CSV
+
+    }
+
 
 get-ADConnectStatus
