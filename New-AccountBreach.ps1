@@ -3,7 +3,7 @@
 ###############################
 
 [CmdletBinding()]
-param 
+param
     (
 
         [parameter()][string]$CSV
@@ -13,16 +13,16 @@ param
 function Get-NewPassword {
 
     $SpecialCharacter = @("!","`$","%","^","&","*","'","@","~","#")
-    
+
     $ieObject = New-Object -ComObject 'InternetExplorer.Application'
 
     $ieObject.Navigate('https://www.worksighted.com/random-passphrase-generator/')
 
-    while ($ieobject.ReadyState -ne 4) 
+    while ($ieobject.ReadyState -ne 4)
             {
 
                     start-sleep -Milliseconds 1
-                    
+
             }
 
     $currentDocument = $ieObject.Document
@@ -36,16 +36,16 @@ function Get-NewPassword {
 }
 
 function print-TecharyLogo {
-    
+
     $logo = "
       _______        _                      
      |__   __|      | |                     
-        | | ___  ___| |__   __ _ _ __ _   _ 
+        | | ___  ___| |__   __ _ _ __ _   _
         | |/ _ \/ __| '_ \ / _`` | '__| | | |
         | |  __/ (__| | | | (_| | |  | |_| |
         |_|\___|\___|_| |_|\__,_|_|   \__, |
                                        __/ |
-                                      |___/ 
+                                      |___/
 "
 
     write-host -ForegroundColor Green $logo
@@ -60,7 +60,7 @@ function connect-365 {
         import-module MSOnline
 
         import-module ExchangeOnlineManagement
-        
+
         import-module AzureADPreview
 
         Connect-ExchangeOnline -ShowBanner:$false
@@ -96,29 +96,29 @@ function connect-365 {
     }
 
 
-    if (Get-Module -ListAvailable -Name ExchangeOnlineManagement) 
+    if (Get-Module -ListAvailable -Name ExchangeOnlineManagement)
         {
             write-host " "
             write-host "Exchange online Management exists"
-        } 
-    else 
+        }
+    else
         {
             Write-host "Exchange Online Management module does not exist. Attempting to download..."
             Get-ExchangeOnlineManagement
         }
 
 
-    if (Get-Module -ListAvailable -Name MSOnline) 
+    if (Get-Module -ListAvailable -Name MSOnline)
         {
             write-host "MSOnline exists"
-        } 
-    else 
+        }
+    else
         {
             Write-host "MSOnline module does not exist. Attempting to download..."
             Get-MSOnline
         }
 
-    if (Get-Module -ListAvailable -Name AzureAD) 
+    if (Get-Module -ListAvailable -Name AzureAD)
         {
             write-host "AzureAD exists, removing...."
             remove-module -name AzureAD -ErrorAction SilentlyContinue | Out-Null
@@ -133,12 +133,12 @@ function connect-365 {
                     write-host "AzureADpreview exists"
 
                 }
-            else 
+            else
                 {
 
                     Write-host "AzureADPreview module does not exist. Attempting to download..."
                     Get-AzureAD
-                
+
                 }
 
         }
@@ -148,7 +148,7 @@ function connect-365 {
             Write-host "AzureADPreview module does not exist. Attempting to download..."
             Get-AzureAD
 
-        } 
+        }
 
     invoke-mfaConnection
 
@@ -158,34 +158,36 @@ function get-ADConnectStatus {
 
     $MSOL = (Get-MsolDirSyncFeatures).enabled
 
-    if ($msol -contains "True") 
+    if ($msol -contains "True")
         {
-            
+
             $DomainRole = Get-WmiObject -Class Win32_ComputerSystem | Select-Object -ExpandProperty DomainRole
 
             if ($DomainRole -match '4|5')
                 {
-                    
+
                     start-LocalAccountBreach
+                    write-output "Starting local account breach"
 
                 }
-            
-            else 
+
+            else
                 {
-            
+
                     write-host -ForegroundColor Red "This 365 tenant has ADConnect. Please run this script on a domain controller."
 
                     pause
-                
+
                 }
 
-        
-        } 
-    
+
+        }
+
     else
         {
 
             start-CloudAccountBreach
+            write-output "Starting cloud account breach"
 
         }
 
@@ -195,19 +197,19 @@ function get-upn {
 
     $script:upn = Read-Host "Enter the UPN of the breached account"
 
-    if (Get-MsolUser -UserPrincipalName $script:upn -ErrorAction SilentlyContinue) 
+    if (Get-MsolUser -UserPrincipalName $script:upn -ErrorAction SilentlyContinue)
         {
 
             Write-host "User found..."
 
         }
 
-    else 
+    else
         {
-            
-            write-host "User not found, try again" 
+
+            write-host "User not found, try again"
             get-upn
-            
+
         }
 
 }
@@ -216,17 +218,15 @@ function Set-NewCloudPassword {
 
     $Script:NewCloudPassword = Get-NewPassword
 
-    $SecureCloudPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
+    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $Script:NewCloudPassword -ForceChangePassword $false
 
-    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $SecureCloudPassword
-  
 }
 
 function set-NewLocalPassword {
 
     $Script:NewLocalPassword = Get-NewPassword
 
-    $SecureLocalPassword = SecurePassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
+    $SecureLocalPassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
 
     get-aduser -filter "userPrincipalName -eq '$script:upn'" | Set-ADAccountPassword -newpassword $SecureLocalPassword
 
@@ -244,11 +244,6 @@ function remove-RestrictedUser {
 
 }
 
-function get-ADLogs {
-
-    (Get-AzureADAuditDirectoryLogs -filter "userprincipalName eq '$script:upn'").location | export-csv "$Script:DesktopPath\LoggedInLocations.csv"
-
-}
 
 function disable-maliciousRules {
 
@@ -276,35 +271,46 @@ function start-CloudAccountBreach {
     if($script:UPNs)
         {
 
+            foreach ($Script:UPN in $script:UPNs)
+                    {
+
+                        Set-NewCloudPassword
+
+                        revoke-365Access
+
+                        remove-RestrictedUser
+
+                        disable-maliciousRules
+
+                        write-host "The password has been reset to $script:NewCloudPassword"
+
+                        write-host "`nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
+                                    `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
+                                    `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+                    }
+
 
         }
-    else 
+    else
         {
-        
+
             get-upn
 
-        }
-    
-    foreach ($Script:UPN in $script:UPNs)
-        {
-    
             Set-NewCloudPassword
 
             revoke-365Access
 
             remove-RestrictedUser
 
-            get-ADLogs
-
             disable-maliciousRules
 
             write-host "The password has been reset to $script:NewCloudPassword"
 
-            write-host "`nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv. 
-                        `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt. 
+            write-host "`nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
                         `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                         `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
-                
+
         }
 
     Stop-Transcript
@@ -320,25 +326,36 @@ function start-LocalAccountBreach {
     if($script:UPNs)
         {
 
+            foreach ($script:upn in $script:UPNs)
+                {
+
+                    set-NewLocalPassword
+
+                    revoke-365Access
+
+                    remove-RestrictedUser
+
+                    disable-maliciousRules
+
+                    write-host "The password has been reset to $script:newlocalpassword, please perform a directory sync in ADConnect.
+                                `nThe login locations for $script:upn have been saved to $Script:DesktopPath\LoggedInLocations.csv.
+                                `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
+                                `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
+                                `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+                }
 
         }
-    else 
+    else
         {
-        
+
             get-upn
-
-        }
-
-    foreach ($script:upn in $script:UPNs)
-        {
 
             set-NewLocalPassword
 
             revoke-365Access
 
             remove-RestrictedUser
-
-            get-ADLogs
 
             disable-maliciousRules
 
@@ -347,7 +364,9 @@ function start-LocalAccountBreach {
                         `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
                         `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
                         `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
         }
+
 
     Stop-Transcript
 
