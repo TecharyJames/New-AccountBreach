@@ -38,8 +38,8 @@ function Get-NewPassword {
 function print-TecharyLogo {
 
     $logo = "
-      _______        _                      
-     |__   __|      | |                     
+      _______        _
+     |__   __|      | |
         | | ___  ___| |__   __ _ _ __ _   _
         | |/ _ \/ __| '_ \ / _`` | '__| | | |
         | |  __/ (__| | | | (_| | |  | |_| |
@@ -218,7 +218,7 @@ function Set-NewCloudPassword {
 
     $Script:NewCloudPassword = Get-NewPassword
 
-    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $Script:NewCloudPassword -ForceChangePassword $false
+    Set-MsolUserPassword -UserPrincipalName $script:upn -NewPassword $Script:NewCloudPassword -ForceChangePassword $false | Out-Null
 
 }
 
@@ -228,7 +228,7 @@ function set-NewLocalPassword {
 
     $SecureLocalPassword = ConvertTo-SecureString $script:NewLocalPassword -AsPlainText -force
 
-    get-aduser -filter "userPrincipalName -eq '$script:upn'" | Set-ADAccountPassword -newpassword $SecureLocalPassword
+    get-aduser -filter "userPrincipalName -eq '$script:upn'" | Set-ADAccountPassword -newpassword $SecureLocalPassword | Out-Null
 
 }
 
@@ -251,7 +251,9 @@ function disable-maliciousRules {
 
     foreach ($rule in $RuleID)
         {
+
             disable-inboxrule -mailbox $script:upn -identity $rule
+
         }
 
     $RuleNames = get-inboxrule -mailbox $script:upn | select name
@@ -288,6 +290,8 @@ function start-CloudAccountBreach {
                                     `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                                     `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
+                        pause
+
                     }
 
 
@@ -310,6 +314,8 @@ function start-CloudAccountBreach {
             write-host "`nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
                         `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
                         `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+            pause
 
         }
 
@@ -343,6 +349,8 @@ function start-LocalAccountBreach {
                                 `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
                                 `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
+                    pause
+
                 }
 
         }
@@ -364,6 +372,8 @@ function start-LocalAccountBreach {
                         `nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
                         `nPlease now call the user, if you haven't already, and run through setting them back up with logging back into their PC with their new password, re-setting up 365 apps, and ensuring the VPN credentials are cleared if required.
                         `nOnce outlook is setup, please then run through outlook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+
+            pause
 
         }
 
