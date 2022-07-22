@@ -9,8 +9,7 @@ This script will:
     5. Reset the password of the breached user.
     6. Revoke all Azure AD refresh tokens.
     7. Remove the account from the 'Restricted users' in 365.
-    8. Export all login locations to $env:userprofile\LoggedInLocations.csv.
-    9. Disable all inbox rules on the breached account.
+    8. Disable all inbox rules on the breached account.
 
 # How To
 
