@@ -274,25 +274,25 @@ function start-CloudAccountBreach {
         {
 
             foreach ($Script:UPN in $script:UPNs)
-                    {
+                {
 
-                        Set-NewCloudPassword
+                    Set-NewCloudPassword
 
-                        revoke-365Access
+                    revoke-365Access
 
-                        remove-RestrictedUser
+                    remove-RestrictedUser
 
-                        disable-maliciousRules
+                    disable-maliciousRules
 
-                        write-host "The password has been reset to $script:NewCloudPassword"
+                    write-host "The password has been reset to $script:NewCloudPassword"
 
-                        write-host "`nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
-                                    `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
-                                    `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
+                    write-host "`nA transcript of this script has been saved to $Script:DesktopPath\AccountBreach.txt.
+                                `nPlease now call the user, if you haven't already, and run through getting outlook set back up.
+                                `nOnce outlook has been setup, please then run through oulook rules with the user, as ALL rules have been disabled. Some may actually be in use."
 
-                        pause
+                    pause
 
-                    }
+                }
 
 
         }
